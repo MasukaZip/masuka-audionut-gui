@@ -2,7 +2,19 @@
 
 > **Aviso da Comunidade:** Eu sei que o desenvolvedor original do projeto (Audionut) está trabalhando no desenvolvimento de uma GUI oficial. Eu criei esta interface (usando Go + React) primeiramente para uso próprio, como uma prova de conceito para testar algumas ideias, mas o resultado final ficou tão bom prático que decidi abrir o repositório e compartilhar com a comunidade!
 
-Uma interface gráfica limpa, moderna e leve desenvolvida para facilitar o processo de upload em Trackers Privados. 
+Uma interface gráfica limpa, moderna e leve desenvolvida para facilitar o processo de upload em Trackers Privados.
+
+---
+
+## Screenshots
+
+| Aba Upload — Pré-visualização de Screenshots | Opções e Log de Progresso |
+|:---:|:---:|
+| ![Aba Upload](screenshots/tela-upload.png) | ![Opções e Upload](screenshots/tela-opcoes.png) |
+
+| Aba Renomear e Info |
+|:---:|
+| ![Renomear](screenshots/tela-renomear.png) | 
 
 Este projeto atua como um frontend alternativo para o famoso script de linha de comando `Upload-Assistant`. Ele foca em tirar a fricção do dia a dia adicionando ferramentas como preenchimento automático, limpeza de nomes e alertas visuais, sem tirar o poder avançado da ferramenta original em Python.
 
