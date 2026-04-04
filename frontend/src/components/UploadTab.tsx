@@ -202,6 +202,13 @@ export default function UploadTab() {
           {debugMsg && <div className="mt-2 text-[10px] text-green-400 font-bold uppercase tracking-wider">{debugMsg}</div>}
         </fieldset>
 
+        {parsedSpecs?.banned_group && (
+          <div className="bg-red-950/60 border-2 border-red-600 rounded p-4 mt-4 shadow-[0_0_25px_rgba(239,68,68,0.3)]">
+            <h3 className="text-red-400 font-black text-base mb-1 flex items-center gap-2">GRUPO BANIDO — ENVIO BLOQUEADO</h3>
+            <p className="text-red-300 text-sm">O grupo <span className="font-black text-red-400">{parsedSpecs.banned_group}</span> está na lista de grupos banidos do tracker por baixa qualidade ou práticas desonestas. Este release não pode ser enviado.</p>
+          </div>
+        )}
+
         {warnings.length > 0 && (
           <div className="bg-red-900/30 border-l-4 border-red-500 rounded-r p-4 animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.15)] mt-4">
             <h3 className="text-red-400 font-bold mb-1 flex items-center gap-2">⚠️ Validador FFprobe: Possível Problema Detectado</h3>
@@ -365,8 +372,8 @@ export default function UploadTab() {
         <fieldset className="primate-fieldset border-[#ffcc00]/50 shadow-[0_0_20px_rgba(255,204,0,0.1)] flex flex-col justify-center gap-4 h-full">
           <legend className="primate-legend !border-[#ffcc00] !text-[#ffcc00] font-black tracking-widest">Ação de Execução</legend>
           <div className="flex gap-2 w-full h-full items-stretch">
-            <button className="btn-gold uppercase tracking-widest flex-1 px-2 font-black shadow-[0_0_15px_rgba(255,204,0,0.3)]" onClick={handleStart} disabled={running}>
-              {running ? "Enviando..." : "Iniciar Upload"}
+            <button className="btn-gold uppercase tracking-widest flex-1 px-2 font-black shadow-[0_0_15px_rgba(255,204,0,0.3)]" onClick={handleStart} disabled={running || !!parsedSpecs?.banned_group}>
+              {running ? "Enviando..." : parsedSpecs?.banned_group ? "GRUPO BANIDO" : "Iniciar Upload"}
             </button>
             <button className="btn-gold uppercase px-4 text-xs !bg-transparent text-gray-500 border-red-900/50 hover:bg-red-900/30 hover:text-red-400" onClick={handleStop} disabled={!running}>
               Parar

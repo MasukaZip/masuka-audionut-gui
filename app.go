@@ -820,6 +820,28 @@ func (a *App) ParseMediaInfo(path string) map[string]string {
 			}
 		}
 
+		// Verificação de Grupos Banidos
+		bannedGroups := []string{
+			"4K4U", "afm72", "Alcaide_Kira", "AROMA", "ASM", "Bandi", "BiTOR", "BLUDV",
+			"Bluespots", "BOLS", "CaNNIBal", "Comando", "d3g", "DepraveD", "Emmid", "EMBER",
+			"FGT", "FreetheFish", "Garshasp", "Ghost", "Grym", "HDS", "Hi10", "HiQVE",
+			"Hiro360", "ImE", "ION10", "iVy", "Judas", "LAMA", "Langbard", "LION", "Lapumia",
+			"MeGusta", "MONOLITH", "MRCS", "NaNi", "Natty", "nikt0", "OEPlus", "OFT", "OsC",
+			"Panda", "PANDEMONiUM", "PHOCiS", "PiRaTeS", "PYC", "QxR", "r00t", "Ralphy",
+			"RARBG", "RetroPeeps", "RZeroX", "S74Ll10n", "SAMPA", "Sicario", "SiCFoI",
+			"Silence", "SkipTT", "SM737", "SPDVD", "STUTTERSHIT", "SWTYBLZ", "t3nzin", "TAoE",
+			"TEKNO3D", "Telly", "TGx", "Tigole", "TSP", "TSPxL", "TWA", "UnKn0wn", "VXT",
+			"Vyndros", "W32", "Will1869", "x0r", "YIFY", "YTS", "YTS.MX",
+		}
+		if res["group"] != "" {
+			for _, banned := range bannedGroups {
+				if strings.EqualFold(res["group"], banned) {
+					res["banned_group"] = res["group"]
+					break
+				}
+			}
+		}
+
 		// Sugestão de Categoria Automática via RegEx
 		if res["suggested_cat"] == "" {
 			reSeason := regexp.MustCompile(`(?i)(?:S\d+|E\d+|1x\d{2})`)
