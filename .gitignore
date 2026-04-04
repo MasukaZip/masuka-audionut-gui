@@ -1,0 +1,17 @@
+build/bin
+node_modules
+frontend/dist
+
+# === DADOS PESSOAIS - NUNCA SUBIR ===
+gui_settings.json
+tracker_stats.db
+*.db
+backups/
+
+# IDE / OS
+.idea/
+.vscode/
+*.exe
+*.dll
+Thumbs.db
+.DS_Store
