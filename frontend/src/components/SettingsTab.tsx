@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { GetSettings, SaveSettings, SelectFolder, UpdateEngine, GetPythonConfig, SavePythonConfig, CheckRequirements, BackupData } from "../../wailsjs/go/main/App";
+import { GetSettings, SaveSettings, SelectFolder, UpdateEngine, UpdatePrimate, GetPythonConfig, SavePythonConfig, CheckRequirements, BackupData } from "../../wailsjs/go/main/App";
 
 export default function SettingsTab() {
   const [settings, setSettings] = useState<any>({
@@ -8,11 +8,14 @@ export default function SettingsTab() {
     qbitHost: "",
     qbitUser: "",
     qbitPass: "",
-    autoMove: false
+    autoMove: false,
+    primatePath: ""
   });
   const [status, setStatus] = useState("");
   const [gitLog, setGitLog] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
+  const [primateLog, setPrimateLog] = useState("");
+  const [isUpdatingPrimate, setIsUpdatingPrimate] = useState(false);
   const [configContent, setConfigContent] = useState("");
   const [configStatus, setConfigStatus] = useState("");
   const [health, setHealth] = useState<any>(null);
@@ -41,7 +44,7 @@ export default function SettingsTab() {
     try {
       await SaveSettings(newSettings);
       setSettings(newSettings);
-      setStatus("Configurações salvas com sucesso! ☑️");
+      setStatus("Configurações salvas com sucesso!");
       setTimeout(() => setStatus(""), 3000);
       if (newSettings.uaPath !== settings.uaPath) {
         loadConfig(newSettings.uaPath);
@@ -74,6 +77,18 @@ export default function SettingsTab() {
       setGitLog(`Erro fatal: ${e}`);
     }
     setIsUpdating(false);
+  };
+
+  const handleUpdatePrimate = async () => {
+    setIsUpdatingPrimate(true);
+    setPrimateLog("Conectando ao GitLab (aguarde)...");
+    try {
+      const res = await UpdatePrimate();
+      setPrimateLog(res.trim());
+    } catch(e: any) {
+      setPrimateLog(`Erro fatal: ${e}`);
+    }
+    setIsUpdatingPrimate(false);
   };
 
   const handleSaveConfig = async () => {
@@ -135,6 +150,15 @@ export default function SettingsTab() {
           <div className="flex gap-2 items-center mb-4">
             <input className="input flex-1 border-gray-700 bg-black/50 text-gold font-mono text-sm" value={settings.destPath} readOnly placeholder="Pasta final após upload" />
             <button className="btn-gold whitespace-nowrap !bg-gray-700 !text-white !border-gray-600" onClick={handleSelectDest}>Selecionar</button>
+          </div>
+
+          <h3 className="text-sm font-bold text-gold mb-2 mt-4">PR1MATE PDF</h3>
+          <p className="text-[10px] text-gray-400 mb-2 italic">
+            Pasta onde o script <strong>pr1matepdf.py</strong> está instalado.
+          </p>
+          <div className="flex gap-2 items-center mb-4">
+            <input className="input flex-1 border-gray-700 bg-black/50 text-gold font-mono text-sm" value={settings.primatePath} readOnly placeholder="Ex: C:\PRIMATE" />
+            <button className="btn-gold whitespace-nowrap !bg-gray-700 !text-white !border-gray-600" onClick={() => SelectFolder().then(p => { if (p) setSettings({...settings, primatePath: p}); })}>Selecionar</button>
           </div>
 
           <button className="btn-gold w-full mt-2" onClick={() => handleSave(settings)}>Salvar Todas Configs</button>
@@ -226,9 +250,19 @@ export default function SettingsTab() {
               O comando 'Git Pull' sincroniza seu motor Python com as últimas correções do repositório oficial. Isso não altera seu config.py, apenas as regras de upload e trackers.
             </p>
             <button className="btn-gold w-full !bg-blue-600 !text-white !border-blue-500 hover:!bg-blue-500" onClick={handleUpdate} disabled={isUpdating}>
-               {isUpdating ? 'Baixando...' : 'Git Pull (Engine)'}
+               {isUpdating ? 'Baixando...' : 'Git Pull (Upload-Assistant)'}
             </button>
             {gitLog && <pre className="mt-4 p-2 bg-black/50 border border-gray-800 rounded text-[9px] text-gray-400 whitespace-pre-wrap max-h-24 overflow-y-auto">{gitLog}</pre>}
+
+            <div className="border-t border-blue-900/40 mt-4 pt-4">
+              <p className="text-[10px] text-gray-400 mb-3 italic">
+                Sincroniza o script PR1MATE PDF com as últimas atualizações do repositório.
+              </p>
+              <button className="btn-gold w-full !bg-blue-800 !text-white !border-blue-700 hover:!bg-blue-700" onClick={handleUpdatePrimate} disabled={isUpdatingPrimate}>
+                {isUpdatingPrimate ? 'Baixando...' : 'Git Pull (PR1MATE PDF)'}
+              </button>
+              {primateLog && <pre className="mt-4 p-2 bg-black/50 border border-gray-800 rounded text-[9px] text-gray-400 whitespace-pre-wrap max-h-24 overflow-y-auto">{primateLog}</pre>}
+            </div>
           </div>
         </div>
 

@@ -10,6 +10,7 @@ const CATEGORIES = [
   'Jogo',
   'Programa',
   'Livro',
+  'HQ / Manga',
   'Audiobook',
   'Revista',
   'Curso'
@@ -167,7 +168,7 @@ export default function RenameTab() {
       add(f.nome); add(f.versao); if (f.group) add(f.group);
       if (f.idioma) add(`[${f.idioma}]`);
 
-    } else if (cat === 'Livro') {
+    } else if (cat === 'Livro' || cat === 'HQ / Manga') {
       add(f.nome); if(f.versao) add(`vol ${f.versao}`); add('-'); add(f.autor);
       if(f.ano) add(`[${f.ano}]`); if(f.obs) add(`[${f.obs}]`);
 
@@ -176,7 +177,7 @@ export default function RenameTab() {
 
     } else if (cat === 'Revista') {
       add(`${f.nome}:`); if (f.edicao) add(f.edicao); add('-'); add(f.autor);
-      if (f.ano) add(`[${f.ano}]`);
+      if (f.ano) add(`[${f.ano}]`); if(f.obs) add(`[${f.obs}]`);
 
     } else if (cat === 'Curso') {
       if(f.plataforma) parts.push(`${f.plataforma}:`);
@@ -219,7 +220,7 @@ export default function RenameTab() {
       if (!f.s) w.push("Falta a Temporada (S0#).");
       if (cat === 'Série Episódio' && !f.e) w.push("Falta o Episódio (E0#).");
     }
-    if (cat === 'Livro' || cat === 'Audiobook' || cat === 'Curso') {
+    if (['Livro', 'HQ / Manga', 'Audiobook', 'Revista', 'Curso'].includes(cat)) {
       if (!f.autor) w.push("Falta o Autor/Professor/Editora.");
     }
     return w;
@@ -334,7 +335,7 @@ export default function RenameTab() {
                <div><span className="label">Versão/Build</span><input className="input w-full" value={f.versao} onChange={e=>handleChange('versao', e.target.value)} placeholder="v1.1.4" /></div>
              )}
 
-             {['Livro'].includes(cat) && (
+             {['Livro', 'HQ / Manga'].includes(cat) && (
                <div><span className="label">Volume</span><input className="input w-full" value={f.versao} onChange={e=>handleChange('versao', e.target.value)} placeholder="Ex: 1" /></div>
              )}
 
@@ -342,7 +343,7 @@ export default function RenameTab() {
                <div><span className="label">Edição</span><input className="input w-full" value={f.edicao} onChange={e=>handleChange('edicao', e.target.value)} placeholder="Ex: Ed. 476" /></div>
              )}
 
-             {['Livro', 'Audiobook', 'Revista', 'Curso'].includes(cat) && (
+             {['Livro', 'HQ / Manga', 'Audiobook', 'Revista', 'Curso'].includes(cat) && (
                <>
                  <div><span className="label">Autor / Instituição</span><input className="input w-full" value={f.autor} onChange={e=>handleChange('autor', e.target.value)} placeholder="Fulano / Abril" /></div>
                  <div><span className="label">Ano / Mês-Ano</span><input className="input w-full" value={f.ano} onChange={e=>handleChange('ano', e.target.value)} placeholder="2024 ou 06/2025" /></div>
@@ -374,7 +375,7 @@ export default function RenameTab() {
                </>
              )}
 
-             {['Jogo', 'Livro', 'Audiobook', 'Revista', 'Curso'].includes(cat) && (
+             {['Jogo', 'Livro', 'HQ / Manga', 'Audiobook', 'Revista', 'Curso'].includes(cat) && (
                <div><span className="label">Obs Extra (Tag final)</span><input className="input w-full" value={f.obs} onChange={e=>handleChange('obs', e.target.value)} placeholder="+DLC, INGLÊS" /></div>
              )}
 

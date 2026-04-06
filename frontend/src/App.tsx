@@ -4,6 +4,7 @@ import RenameTab from './components/RenameTab';
 import AboutTab from './components/AboutTab';
 import SettingsTab from './components/SettingsTab';
 import DashboardTab from './components/DashboardTab';
+import PrimateTab from './components/PrimateTab';
 
 function App() {
   const [activeTab, setActiveTab] = useState('upload');
@@ -45,7 +46,13 @@ function App() {
           >
             Configurações
           </button>
-          <button 
+          <button
+            onClick={() => setActiveTab('primate')}
+            className={`px-6 py-2 rounded text-xs font-bold uppercase tracking-wider transition-all ${activeTab === 'primate' ? 'bg-[#ffcc00] text-black shadow-[0_0_10px_rgba(255,204,0,0.3)]' : 'border border-gray-700 text-gray-400 hover:border-[#ffcc00] hover:text-[#ffcc00]'}`}
+          >
+            PR1MATE PDF
+          </button>
+          <button
             onClick={() => setActiveTab('about')}
             className={`px-6 py-2 rounded text-xs font-bold uppercase tracking-wider transition-all ${activeTab === 'about' ? 'bg-[#ffcc00] text-black shadow-[0_0_10px_rgba(255,204,0,0.3)]' : 'border border-gray-700 text-gray-400 hover:border-[#ffcc00] hover:text-[#ffcc00]'}`}
           >
@@ -60,6 +67,7 @@ function App() {
         {activeTab === 'rename' && <RenameTab />}
         {activeTab === 'dashboard' && <DashboardTab />}
         {activeTab === 'settings' && <SettingsTab />}
+        {activeTab === 'primate' && <PrimateTab />}
         {activeTab === 'about' && <AboutTab />}
       </main>
     </div>

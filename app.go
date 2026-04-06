@@ -30,16 +30,33 @@ type App struct {
 	uploadStdin   io.WriteCloser
 	uploadMutex   sync.Mutex
 	isUploading   bool
+	primateCmd    *exec.Cmd
+	primateMutex  sync.Mutex
+	isUploading2  bool
 	db            *sql.DB
 }
 
 type AppSettings struct {
-	UAPath   string `json:"uaPath"`
-	DestPath string `json:"destPath"`
-	QbitHost string `json:"qbitHost"`
-	QbitUser string `json:"qbitUser"`
-	QbitPass string `json:"qbitPass"`
-	AutoMove bool   `json:"autoMove"`
+	UAPath      string `json:"uaPath"`
+	DestPath    string `json:"destPath"`
+	QbitHost    string `json:"qbitHost"`
+	QbitUser    string `json:"qbitUser"`
+	QbitPass    string `json:"qbitPass"`
+	AutoMove    bool   `json:"autoMove"`
+	PrimatePath string `json:"primatePath"`
+}
+
+type PrimateRequest struct {
+	Path        string `json:"path"`
+	Titulo      string `json:"titulo"`
+	Descricao   string `json:"descricao"`
+	Modo        string `json:"modo"`   // "curso", "ebook", "video"
+	TypeId      string `json:"typeId"`
+	Multi       bool   `json:"multi"`
+	Detalhes    bool   `json:"detalhes"`
+	DefaultSig  bool   `json:"defaultSig"`
+	PosterPath  string `json:"posterPath"`
+	BannerPath  string `json:"bannerPath"`
 }
 
 func (a *App) InitDB() error {
@@ -102,15 +119,58 @@ func (a *App) UpdateEngine() string {
 			"Dica: O Git deve estar instalado no seu Windows para que os comandos funcionem."
 	}
 
-	cmd := exec.Command("git", "pull")
-	cmd.Dir = uaPath
-	out, err := cmd.CombinedOutput()
-
-	if err != nil {
-		return fmt.Sprintf("FALHA AO ATUALIZAR:\n%s\n%s", err.Error(), string(out))
+	runGit := func(args ...string) (string, error) {
+		cmd := exec.Command("git", args...)
+		cmd.Dir = uaPath
+		out, err := cmd.CombinedOutput()
+		return string(out), err
 	}
 
-	return string(out)
+	runGit("stash")
+	out, err := runGit("pull")
+	runGit("stash", "pop")
+
+	if err != nil {
+		return fmt.Sprintf("FALHA AO ATUALIZAR:\n%s\n%s", err.Error(), out)
+	}
+	return out
+}
+
+func (a *App) UpdatePrimate() string {
+	settings := a.GetSettings()
+	primatePath := settings.PrimatePath
+
+	if primatePath == "" {
+		return "ERRO: Caminho do PR1MATE PDF não configurado.\n\nVá em Configurações e selecione a pasta onde o pr1matepdf.py está instalado."
+	}
+
+	gitDir := filepath.Join(primatePath, ".git")
+	if _, err := os.Stat(gitDir); os.IsNotExist(err) {
+		return "ERRO: O sistema '.git' não foi encontrado nesta pasta.\n\n" +
+			"Para usar a atualização automática, você deve ter baixado o script via comando 'git clone'.\n" +
+			"Siga o passo a passo abaixo para resolver:\n\n" +
+			"1. Abra o Terminal (PowerShell ou CMD)\n" +
+			"2. Digite: cd \"C:\\Caminho\\Onde\\Voce\\Quer\\O\\Script\"\n" +
+			"3. Digite: git clone https://gitlab.com/n1njapr1mate/pr1mate-pdf.git\n" +
+			"4. Após baixar, volte aqui nas configurações e selecione a nova pasta criada.\n\n" +
+			"Dica: O Git deve estar instalado no seu Windows para que os comandos funcionem."
+	}
+
+	runGit := func(args ...string) (string, error) {
+		cmd := exec.Command("git", args...)
+		cmd.Dir = primatePath
+		out, err := cmd.CombinedOutput()
+		return string(out), err
+	}
+
+	runGit("stash")
+	out, err := runGit("pull")
+	runGit("stash", "pop")
+
+	if err != nil {
+		return fmt.Sprintf("FALHA AO ATUALIZAR:\n%s\n%s", err.Error(), out)
+	}
+	return out
 }
 
 type TMDBResult struct {
@@ -569,6 +629,97 @@ func (a *App) StopUpload() {
 	if a.uploadCmd != nil && a.uploadCmd.Process != nil {
 		a.uploadCmd.Process.Kill()
 		runtime.EventsEmit(a.ctx, "log", "\n<b style='color:#e74c3c;'>Interrompendo processo...</b>\n")
+	}
+}
+
+func (a *App) StartPrimateUpload(req PrimateRequest) error {
+	a.primateMutex.Lock()
+	if a.isUploading2 {
+		a.primateMutex.Unlock()
+		return fmt.Errorf("já existe um upload em andamento")
+	}
+	a.isUploading2 = true
+	a.primateMutex.Unlock()
+
+	defer func() {
+		a.primateMutex.Lock()
+		a.isUploading2 = false
+		a.primateMutex.Unlock()
+		runtime.EventsEmit(a.ctx, "primateFinished")
+	}()
+
+	settings := a.GetSettings()
+	script := filepath.Join(settings.PrimatePath, "pr1matepdf.py")
+
+	// Escrever descricao.txt na pasta alvo se houver descrição
+	descFile := ""
+	if req.Descricao != "" {
+		dir := req.Path
+		info, err := os.Stat(req.Path)
+		if err == nil && !info.IsDir() {
+			dir = filepath.Dir(req.Path)
+		}
+		descFile = filepath.Join(dir, "descricao.txt")
+		os.WriteFile(descFile, []byte(req.Descricao), 0644)
+	}
+
+	args := []string{"-u", script, req.Path}
+
+	if req.Titulo != "" {
+		args = append(args, "-titulo", req.Titulo)
+	}
+	if req.Modo != "" {
+		args = append(args, "-"+req.Modo)
+	}
+	if req.TypeId != "" {
+		args = append(args, "-type", req.TypeId)
+	}
+	if req.Multi {
+		args = append(args, "-multi")
+	}
+	if req.Detalhes {
+		args = append(args, "-detalhes")
+	}
+	if req.DefaultSig {
+		args = append(args, "-default")
+	}
+	if req.PosterPath != "" {
+		args = append(args, "-poster", req.PosterPath)
+	}
+	if req.BannerPath != "" {
+		args = append(args, "-banner", req.BannerPath)
+	}
+
+	cmd := exec.Command("python", args...)
+	cmd.Dir = settings.PrimatePath
+
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return err
+	}
+	cmd.Stderr = cmd.Stdout
+
+	if err := cmd.Start(); err != nil {
+		return fmt.Errorf("erro ao iniciar pr1matepdf.py: %v", err)
+	}
+	a.primateCmd = cmd
+
+	go a.monitorOutput(stdout, false)
+
+	cmd.Wait()
+
+	// Limpar descricao.txt temporário
+	if descFile != "" {
+		os.Remove(descFile)
+	}
+
+	return nil
+}
+
+func (a *App) StopPrimateUpload() {
+	if a.primateCmd != nil && a.primateCmd.Process != nil {
+		a.primateCmd.Process.Kill()
+		runtime.EventsEmit(a.ctx, "primateLog", "\n<b style='color:#e74c3c;'>Interrompendo processo...</b>\n")
 	}
 }
 
