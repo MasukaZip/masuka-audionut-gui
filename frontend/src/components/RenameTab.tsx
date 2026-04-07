@@ -117,47 +117,53 @@ export default function RenameTab() {
 
     const add = (val: string) => { if (val.trim()) parts.push(val.trim()); };
 
+    const addTag = (tg: string[]) => {
+      if (tg.length === 0) return;
+      const s = tg.join('-');
+      if (parts.length > 0) parts[parts.length - 1] += '-' + s;
+      else parts.push(s);
+    };
+
     if (cat === 'Filme / Doc (WEB/Encode)') {
       add(f.nome); add(f.ano); add(f.res); add(f.streaming); add(f.source);
       add(f.hdr); add(f.acodec); add(f.vcodec);
-      // Group concat
-      let tg = [];
+      const tg = [];
       if (f.audio) tg.push(f.audio);
       if (f.group) tg.push(f.group);
-      if (tg.length > 0) parts.push(tg.join('-'));
+      addTag(tg);
 
     } else if (cat === 'Remux') {
       add(f.nome); add(f.ano); add(f.res); add(f.source); add('REMUX');
       add(f.hdr); add(f.vcodec); add(f.acodec);
-      let tg = [];
+      const tg = [];
       if (f.audio) tg.push(f.audio);
       if (f.group) tg.push(f.group);
-      if (tg.length > 0) parts.push(tg.join('-'));
+      addTag(tg);
 
     } else if (cat === 'Full Disc') {
       add(f.nome); add(f.ano); add(f.res); add(f.regiao); add(f.source);
       add(f.hdr); add(f.vcodec); add(f.acodec);
-      let tg = [];
+      const tg = [];
       if (f.audio) tg.push(f.audio);
       if (f.group) tg.push(f.group);
-      if (tg.length > 0) parts.push(tg.join('-'));
+      addTag(tg);
 
     } else if (cat === 'Série Completa') {
       add(f.nome); if(f.s) add(`S${f.s.padStart(2,'0')}`);
       add(f.res); add(f.streaming); add(f.source); add(f.hdr); add(f.acodec); add(f.vcodec);
-      let tg = [];
+      const tg = [];
       if (f.audio) tg.push(f.audio);
       if (f.group) tg.push(f.group);
-      if (tg.length > 0) parts.push(tg.join('-'));
+      addTag(tg);
 
     } else if (cat === 'Série Episódio') {
-      add(f.nome); 
+      add(f.nome);
       if(f.s && f.e) add(`S${f.s.padStart(2,'0')}E${f.e.padStart(2,'0')}`);
       add(f.res); add(f.streaming); add(f.source); add(f.hdr); add(f.acodec); add(f.vcodec);
-      let tg = [];
+      const tg = [];
       if (f.audio) tg.push(f.audio);
       if (f.group) tg.push(f.group);
-      if (tg.length > 0) parts.push(tg.join('-'));
+      addTag(tg);
 
     } else if (cat === 'Jogo') {
       add(f.nome); add(f.versao); add(f.ano); if (f.group) add(`- ${f.group}`);

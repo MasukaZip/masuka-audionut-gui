@@ -98,6 +98,7 @@ A aba **Configurações** centraliza tudo:
   ```bash
   go install github.com/wailsapp/wails/v2/cmd/wails@latest
   ```
+  > Após instalar, o executável do Wails fica em `%USERPROFILE%\go\bin`. Se ao rodar `wails dev` aparecer **"wails não é reconhecido como comando"**, adicione essa pasta ao PATH do Windows: `Painel de Controle > Variáveis de Ambiente > Path > Novo > %USERPROFILE%\go\bin`
 
 ### 3 — Rodando
 
