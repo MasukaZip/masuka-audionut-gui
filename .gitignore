@@ -8,6 +8,11 @@ tracker_stats.db
 *.db
 backups/
 
+# === DOCKER - DIRETÓRIOS LOCAIS DE RUNTIME ===
+# docker/config/ é versionado (contém os arquivos padrão com placeholders)
+docker/data/
+docker/state/
+
 # IDE / OS
 .idea/
 .vscode/
