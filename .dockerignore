@@ -1,0 +1,11 @@
+build/bin/
+build/darwin/
+build/windows/
+frontend/node_modules/
+frontend/dist/
+screenshots/
+*.db
+gui_settings.json
+.git/
+.github/
+docker-compose.example.yml

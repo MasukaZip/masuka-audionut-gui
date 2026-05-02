@@ -1,0 +1,16 @@
+services:
+  masuka-audionut-gui:
+    image: ghcr.io/masukazip/masuka-audionut-gui:latest
+    restart: unless-stopped
+    ports:
+      - "34115:34115"
+    volumes:
+      # Na primeira execução os arquivos de configuração são criados aqui automaticamente.
+      # Edite-os e reinicie o container para aplicar as mudanças.
+      - ./config:/config
+
+      # Diretório raiz de mídia — o mesmo /data compartilhado com qBittorrent, Sonarr, etc.
+      - /data:/data
+
+      # Estado persistente da aplicação (banco de dados, etc.)
+      - ./state:/state

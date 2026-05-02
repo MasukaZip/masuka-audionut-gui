@@ -6,6 +6,7 @@
   "frontend:build": "npm run build",
   "frontend:dev:watcher": "npm run dev",
   "frontend:dev:serverUrl": "auto",
+  "devServer": "0.0.0.0:34115",
   "author": {
     "name": "",
     "email": ""
