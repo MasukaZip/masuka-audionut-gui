@@ -77,7 +77,57 @@ A aba **Configurações** centraliza tudo:
 
 ---
 
-## Instalação
+## Docker
+
+A forma mais simples de rodar a interface — sem instalar Python, Go, Node.js ou ffmpeg na sua máquina.
+
+### 1 — Copie o exemplo de compose
+
+Baixe o arquivo [`docker-compose.example.yml`](docker-compose.example.yml), renomeie para `docker-compose.yml` e ajuste os volumes conforme seu ambiente:
+
+```yaml
+services:
+  masuka-audionut-gui:
+    image: ghcr.io/masukazip/masuka-audionut-gui:latest
+    restart: unless-stopped
+    ports:
+      - "34115:34115"
+    volumes:
+      - ./config:/config   # configurações — preenchidas após o primeiro start
+      - /data:/data        # seu /data compartilhado com qBittorrent, Sonarr, etc.
+      - ./state:/state     # banco de dados e estado persistente
+```
+
+### 2 — Suba o container
+
+```bash
+docker compose up -d
+```
+
+### 3 — Preencha as configurações
+
+Na primeira execução o container cria automaticamente dois arquivos em `./config/`:
+
+| Arquivo | O que configurar |
+|---|---|
+| `config.py` | Chaves de API (TMDB, imgbb), tracker (api_key, announce_url) e cliente de torrent |
+| `gui_settings.json` | Caminhos dos motores, qBittorrent e pasta de destino |
+
+Edite os arquivos, depois reinicie:
+
+```bash
+docker compose restart
+```
+
+### 4 — Acesse
+
+Abra o navegador em **http://localhost:34115**
+
+> O volume `/data` deve ser o mesmo diretório raiz usado pelo qBittorrent e pelos *arr — assim os hardlinks funcionam corretamente entre a pasta de download e a biblioteca de mídia.
+
+---
+
+## Instalação manual
 
 ### 1 — Dependências base
 
