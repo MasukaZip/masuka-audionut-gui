@@ -24,6 +24,8 @@ ln -sf "$CONFIG_DIR/gui_settings.json" /app/gui_settings.json
 touch "$STATE_DIR/tracker_stats.db"
 ln -sf "$STATE_DIR/tracker_stats.db" /app/tracker_stats.db
 
+export RUNNING_IN_DOCKER=true
+
 # ── Xvfb ─────────────────────────────────────────────────────────────────────
 # O WebKitGTK (usado pelo Wails) precisa de um display para inicializar,
 # mesmo que ninguém o veja — a interface real é servida pelo navegador na porta 34115.

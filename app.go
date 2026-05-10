@@ -59,6 +59,10 @@ type PrimateRequest struct {
 	BannerPath  string `json:"bannerPath"`
 }
 
+func (a *App) IsDocker() bool {
+	return os.Getenv("RUNNING_IN_DOCKER") == "true"
+}
+
 func (a *App) InitDB() error {
 	db, err := sql.Open("sqlite", "tracker_stats.db")
 	if err != nil {

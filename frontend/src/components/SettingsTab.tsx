@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { GetSettings, SaveSettings, SelectFolder, UpdateEngine, UpdatePrimate, GetPythonConfig, SavePythonConfig, CheckRequirements, BackupData } from "../../wailsjs/go/main/App";
+import { GetSettings, SaveSettings, SelectFolder, UpdateEngine, UpdatePrimate, GetPythonConfig, SavePythonConfig, CheckRequirements, BackupData, IsDocker } from "../../wailsjs/go/main/App";
 
 export default function SettingsTab() {
   const [settings, setSettings] = useState<any>({
@@ -11,6 +11,8 @@ export default function SettingsTab() {
     autoMove: false,
     primatePath: ""
   });
+  const [lockedPaths, setLockedPaths] = useState<{uaPath: string, primatePath: string} | null>(null);
+  const [isDocker, setIsDocker] = useState(false);
   const [status, setStatus] = useState("");
   const [gitLog, setGitLog] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
@@ -23,8 +25,10 @@ export default function SettingsTab() {
   const [backupStatus, setBackupStatus] = useState("");
 
   useEffect(() => {
+    IsDocker().then(setIsDocker).catch(console.error);
     GetSettings().then((s) => {
       setSettings(s);
+      setLockedPaths({ uaPath: s.uaPath, primatePath: s.primatePath });
       loadConfig(s.uaPath);
     }).catch(console.error);
   }, []);
@@ -42,12 +46,16 @@ export default function SettingsTab() {
   const handleSave = async (newSettings: any) => {
     setStatus("Salvando...");
     try {
-      await SaveSettings(newSettings);
-      setSettings(newSettings);
+      // Em modo Docker os caminhos dos motores são fixos — nunca sobrescreve
+      const toSave = isDocker && lockedPaths
+        ? { ...newSettings, uaPath: lockedPaths.uaPath, primatePath: lockedPaths.primatePath }
+        : newSettings;
+      await SaveSettings(toSave);
+      setSettings(toSave);
       setStatus("Configurações salvas com sucesso!");
       setTimeout(() => setStatus(""), 3000);
-      if (newSettings.uaPath !== settings.uaPath) {
-        loadConfig(newSettings.uaPath);
+      if (toSave.uaPath !== settings.uaPath) {
+        loadConfig(toSave.uaPath);
       }
     } catch (e) {
       console.error(e);
@@ -135,14 +143,33 @@ export default function SettingsTab() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-12">
         <div className="card border border-yellow-900/40 bg-yellow-900/10 shadow-[0_0_15px_rgba(255,204,0,0.1)]">
           <h3 className="text-lg font-bold text-gold mb-2 flex items-center gap-2">Configuração Principal</h3>
+
           <p className="text-sm mb-4 text-gray-400">
             Aponte a pasta base onde o <strong>Upload-Assistant (Python)</strong> está instalado.
           </p>
-          <div className="flex gap-2 items-center mb-4">
-            <input className="input flex-1 border-gray-700 bg-black/50 text-gold font-mono text-sm" value={settings.uaPath} readOnly placeholder="Ex: C:\Upload-Assistant" />
-            <button className="btn-gold whitespace-nowrap" onClick={handleSelectUA}>Mudar Pasta</button>
+          <div className="flex gap-2 items-center mb-1">
+            <input
+              className={`input flex-1 border-gray-700 font-mono text-sm ${isDocker ? "bg-black/20 text-gray-600 cursor-not-allowed" : "bg-black/50 text-gold"}`}
+              value={settings.uaPath}
+              readOnly
+              placeholder="Ex: C:\Upload-Assistant"
+            />
+            <button
+              className="btn-gold whitespace-nowrap"
+              onClick={handleSelectUA}
+              disabled={isDocker}
+              title={isDocker ? "Não disponível no modo Docker" : undefined}
+            >
+              Mudar Pasta
+            </button>
           </div>
-          
+          {isDocker && (
+            <p className="text-[10px] text-gray-500 italic mb-4">
+              🐳 Caminho gerenciado pelo container — edite o volume <code>/config</code> para alterar.
+            </p>
+          )}
+          {!isDocker && <div className="mb-4" />}
+
           <h3 className="text-sm font-bold text-gold mb-2">Caminho de Destino (Auto-Move)</h3>
           <p className="text-[10px] text-gray-400 mb-2 italic">
             Define para onde os arquivos serão movidos após o upload ser concluído com sucesso. O qBittorrent será notificado para alterar o local e continuar semeando de lá.
@@ -156,10 +183,28 @@ export default function SettingsTab() {
           <p className="text-[10px] text-gray-400 mb-2 italic">
             Pasta onde o script <strong>pr1matepdf.py</strong> está instalado.
           </p>
-          <div className="flex gap-2 items-center mb-4">
-            <input className="input flex-1 border-gray-700 bg-black/50 text-gold font-mono text-sm" value={settings.primatePath} readOnly placeholder="Ex: C:\PRIMATE" />
-            <button className="btn-gold whitespace-nowrap !bg-gray-700 !text-white !border-gray-600" onClick={() => SelectFolder().then(p => { if (p) setSettings({...settings, primatePath: p}); })}>Selecionar</button>
+          <div className="flex gap-2 items-center mb-1">
+            <input
+              className={`input flex-1 border-gray-700 font-mono text-sm ${isDocker ? "bg-black/20 text-gray-600 cursor-not-allowed" : "bg-black/50 text-gold"}`}
+              value={settings.primatePath}
+              readOnly
+              placeholder="Ex: C:\PRIMATE"
+            />
+            <button
+              className="btn-gold whitespace-nowrap !bg-gray-700 !text-white !border-gray-600"
+              onClick={() => SelectFolder().then(p => { if (p) setSettings({...settings, primatePath: p}); })}
+              disabled={isDocker}
+              title={isDocker ? "Não disponível no modo Docker" : undefined}
+            >
+              Selecionar
+            </button>
           </div>
+          {isDocker && (
+            <p className="text-[10px] text-gray-500 italic mb-4">
+              🐳 Caminho gerenciado pelo container — edite o volume <code>/config</code> para alterar.
+            </p>
+          )}
+          {!isDocker && <div className="mb-4" />}
 
           <button className="btn-gold w-full mt-2" onClick={() => handleSave(settings)}>Salvar Todas Configs</button>
           {status && <div className="text-sm mt-3 text-green-400 font-bold animate-pulse text-center">{status}</div>}
@@ -183,7 +228,7 @@ export default function SettingsTab() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        
+
         {/* Editor de Config */}
         <div className="col-span-2 card bg-gray-900/50 border-gray-800 p-0 overflow-hidden flex flex-col h-[500px] relative">
           <div className="bg-gray-900/80 p-4 border-b border-gray-800 flex justify-between items-center">
@@ -193,7 +238,7 @@ export default function SettingsTab() {
             </div>
             <button className="btn-gold !py-1 !px-3 text-xs" onClick={handleSaveConfig}>Salvar Config</button>
           </div>
-          <textarea 
+          <textarea
             className="flex-1 w-full bg-black/80 text-gray-300 font-mono text-[11px] p-4 resize-none outline-none focus:ring-1 focus:ring-gold/50"
             value={configContent}
             onChange={(e) => setConfigContent(e.target.value)}
