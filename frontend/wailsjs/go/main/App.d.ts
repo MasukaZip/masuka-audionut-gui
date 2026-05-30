@@ -4,6 +4,8 @@ import {main} from '../models';
 
 export function BackupData():Promise<string>;
 
+export function CheckFolderSubtitles(arg1:string):Promise<Record<string, any>>;
+
 export function CheckRequirements():Promise<main.HealthCheckResult>;
 
 export function DeletePreviewScreenshots(arg1:string):Promise<void>;
@@ -44,10 +46,16 @@ export function SelectFile():Promise<string>;
 
 export function SelectFolder():Promise<string>;
 
+export function StartPrimateUpload(arg1:main.PrimateRequest):Promise<void>;
+
 export function StartUpload(arg1:main.UploadRequest):Promise<void>;
+
+export function StopPrimateUpload():Promise<void>;
 
 export function StopUpload():Promise<void>;
 
 export function UpdateEngine():Promise<string>;
+
+export function UpdatePrimate():Promise<string>;
 
 export function ValidateMedia(arg1:string):Promise<Array<string>>;

@@ -568,6 +568,8 @@ func (a *App) StartUpload(req UploadRequest) error {
 		uploadStatus = "Sucesso"
 		// Automação Pós-Upload
 		if req.AutoMove && req.DestPath != "" {
+			runtime.EventsEmit(a.ctx, "log", "\n<b style='color:#3498db;'>[Automação] Aguardando qBittorrent registrar torrents...</b>\n")
+			time.Sleep(4 * time.Second)
 			runtime.EventsEmit(a.ctx, "log", fmt.Sprintf("\n<b style='color:#3498db;'>[Automação] Movendo arquivos para: %s</b>\n", req.DestPath))
 			moveErr := a.PostUploadMove(filepath.Base(req.Path), req.DestPath)
 			if moveErr != nil {
@@ -908,19 +910,22 @@ func (a *App) ParseMediaInfo(path string) map[string]string {
 	if err == nil && info.IsDir() {
 		var biggest string
 		var maxSz int64
-		filepath.Walk(path, func(p string, i os.FileInfo, e error) error {
-			if e == nil && !i.IsDir() {
-				ext := strings.ToLower(filepath.Ext(p))
-				if ext == ".mkv" || ext == ".mp4" || ext == ".ts" || ext == ".avi" {
-					allNames = append(allNames, filepath.Base(p))
-					if i.Size() > maxSz {
-						maxSz = i.Size()
-						biggest = p
+		videoExtsMap := map[string]bool{".mkv": true, ".mp4": true, ".ts": true, ".avi": true, ".m2ts": true}
+		if entries, rdErr := os.ReadDir(path); rdErr == nil {
+			for _, entry := range entries {
+				if entry.IsDir() {
+					continue
+				}
+				ext := strings.ToLower(filepath.Ext(entry.Name()))
+				if videoExtsMap[ext] {
+					allNames = append(allNames, entry.Name())
+					if fi, fiErr := entry.Info(); fiErr == nil && fi.Size() > maxSz {
+						maxSz = fi.Size()
+						biggest = filepath.Join(path, entry.Name())
 					}
 				}
 			}
-			return nil
-		})
+		}
 		if biggest != "" {
 			targetPath = biggest
 		}
@@ -1019,16 +1024,16 @@ func (a *App) ParseMediaInfo(path string) map[string]string {
 	}
 
 	// Now try ffprobe no arquivo principal
-	cmd := exec.Command("ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=height,codec_name", "-of", "csv=p=0", targetPath)
+	cmd := exec.Command("ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=codec_name,height", "-of", "csv=p=0", targetPath)
 	out, err := cmd.Output()
 	if err == nil {
 		lines := strings.Split(strings.TrimSpace(string(out)), ",")
 		if len(lines) == 2 {
 			codec := lines[0]
 			height := lines[1]
-			
+
 			if height == "2160" { res["res"] = "2160p" } else if height == "1080" { res["res"] = "1080p" } else if height == "720" { res["res"] = "720p" }
-			if codec == "hevc" { res["vcodec"] = "HEVC" } else if codec == "h264" { res["vcodec"] = "H.264" }
+			if codec == "hevc" { res["vcodec"] = "HEVC" } else if codec == "h264" { res["vcodec"] = "H.264" } else if codec == "av1" { res["vcodec"] = "AV1" } else if codec == "vp9" { res["vcodec"] = "VP9" }
 		}
 	}
 
@@ -1231,26 +1236,25 @@ func (a *App) PostUploadMove(name string, newPath string) error {
 		return err
 	}
 
-	var hash string
+	var hashes []string
 	for _, t := range torrents {
 		if tName, ok := t["name"].(string); ok {
 			if strings.Contains(strings.ToLower(tName), strings.ToLower(name)) {
 				if tHash, ok := t["hash"].(string); ok {
-					hash = tHash
-					break
+					hashes = append(hashes, tHash)
 				}
 			}
 		}
 	}
 
-	if hash == "" {
+	if len(hashes) == 0 {
 		return fmt.Errorf("torrent '%s' não encontrado no qBittorrent", name)
 	}
 
-	// 2. SetLocation (qBit move os arquivos)
+	// 2. SetLocation para todos os torrents encontrados (original + novo do upload)
 	moveUrl := fmt.Sprintf("%s/api/v2/torrents/setLocation", host)
 	moveData := url.Values{}
-	moveData.Set("hashes", hash)
+	moveData.Set("hashes", strings.Join(hashes, "|"))
 	moveData.Set("location", newPath)
 
 	reqMove, _ := http.NewRequest("POST", moveUrl, strings.NewReader(moveData.Encode()))
@@ -1268,6 +1272,51 @@ func (a *App) PostUploadMove(name string, newPath string) error {
 	}
 
 	return nil
+}
+
+// CheckFolderSubtitles verifica se há legendas na mesma pasta de um arquivo de vídeo
+func (a *App) CheckFolderSubtitles(filePath string) map[string]interface{} {
+	result := map[string]interface{}{
+		"hasSubtitles": false,
+		"mkvCount":     0,
+		"folderPath":   "",
+	}
+
+	info, err := os.Stat(filePath)
+	if err != nil || info.IsDir() {
+		return result
+	}
+
+	folder := filepath.Dir(filePath)
+	result["folderPath"] = folder
+
+	entries, err := os.ReadDir(folder)
+	if err != nil {
+		return result
+	}
+
+	subtitleExts := map[string]bool{".srt": true, ".ass": true, ".sub": true, ".idx": true, ".vtt": true, ".sup": true}
+	videoExts := map[string]bool{".mkv": true, ".mp4": true, ".avi": true, ".ts": true}
+
+	mkvCount := 0
+	hasSubtitles := false
+
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		ext := strings.ToLower(filepath.Ext(entry.Name()))
+		if videoExts[ext] {
+			mkvCount++
+		}
+		if subtitleExts[ext] {
+			hasSubtitles = true
+		}
+	}
+
+	result["hasSubtitles"] = hasSubtitles
+	result["mkvCount"] = mkvCount
+	return result
 }
 
 // GenerateScreenshots captures N screenshots from the video using FFmpeg for preview
@@ -1291,20 +1340,29 @@ func (a *App) GenerateScreenshots(mediaPath string, count int) []ScreenshotResul
 	if info.IsDir() {
 		var biggest string
 		var maxSz int64
-		filepath.Walk(mediaPath, func(p string, i os.FileInfo, e error) error {
-			if e == nil && !i.IsDir() {
-				ext := strings.ToLower(filepath.Ext(p))
-				if ext == ".mkv" || ext == ".mp4" || ext == ".ts" || ext == ".avi" {
-					if i.Size() > maxSz {
-						maxSz = i.Size()
-						biggest = p
+		videoExts := map[string]bool{".mkv": true, ".mp4": true, ".ts": true, ".avi": true, ".m2ts": true, ".iso": true}
+		entries, readErr := os.ReadDir(mediaPath)
+		if readErr == nil {
+			for _, entry := range entries {
+				if entry.IsDir() {
+					continue
+				}
+				ext := strings.ToLower(filepath.Ext(entry.Name()))
+				if videoExts[ext] {
+					fi, fiErr := entry.Info()
+					if fiErr == nil && fi.Size() > maxSz {
+						maxSz = fi.Size()
+						biggest = filepath.Join(mediaPath, entry.Name())
 					}
 				}
 			}
-			return nil
-		})
+		}
 		if biggest != "" {
 			targetFile = biggest
+		} else {
+			runtime.EventsEmit(a.ctx, "log", "<span style='color:#e74c3c;'>Nenhum arquivo de vídeo encontrado na pasta selecionada.</span>\n")
+			runtime.EventsEmit(a.ctx, "screenshotProgress", "")
+			return results
 		}
 	}
 
@@ -1312,16 +1370,16 @@ func (a *App) GenerateScreenshots(mediaPath string, count int) []ScreenshotResul
 
 	// Get duration via ffprobe
 	cmd := exec.Command("ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", targetFile)
-	out, err := cmd.Output()
-	if err != nil {
-		runtime.EventsEmit(a.ctx, "log", "<span style='color:#e74c3c;'>Erro ao obter duração via FFprobe</span>\n")
+	out, errCmd := cmd.CombinedOutput()
+	if errCmd != nil {
+		runtime.EventsEmit(a.ctx, "log", fmt.Sprintf("<span style='color:#e74c3c;'>Erro ao obter duração via FFprobe: %s\nArquivo: %s\nDetalhes: %s</span>\n", errCmd.Error(), targetFile, strings.TrimSpace(string(out))))
 		runtime.EventsEmit(a.ctx, "screenshotProgress", "")
 		return results
 	}
 	durationStr := strings.TrimSpace(string(out))
 	duration, err := strconv.ParseFloat(durationStr, 64)
 	if err != nil || duration <= 0 {
-		runtime.EventsEmit(a.ctx, "log", "<span style='color:#e74c3c;'>Duração do vídeo inválida</span>\n")
+		runtime.EventsEmit(a.ctx, "log", fmt.Sprintf("<span style='color:#e74c3c;'>Duração do vídeo inválida: '%s'</span>\n", durationStr))
 		runtime.EventsEmit(a.ctx, "screenshotProgress", "")
 		return results
 	}

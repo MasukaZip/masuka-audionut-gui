@@ -199,12 +199,20 @@ export default function RenameTab() {
   let fileName = uploadTitle.replace(/ /g, '.').replace(/\.\./g, '.');
   
   // Se for um arquivo físico e não uma pasta, precisamos manter a extensão de vídeo (ex: .mkv)
+  const videoExts = ['.mkv', '.mp4', '.avi', '.ts', '.m2ts', '.iso', '.vob'];
+  // Remove extensão duplicada caso já exista no fileName
+  for (const ve of videoExts) {
+    if (fileName.toLowerCase().endsWith(ve)) {
+      fileName = fileName.slice(0, -ve.length);
+      break;
+    }
+  }
   if (path) {
     const originalName = path.split(/[/\\]/).pop() || '';
     const lastDot = originalName.lastIndexOf('.');
     if (lastDot > 0) {
       const ext = originalName.substring(lastDot).toLowerCase();
-      if (['.mkv', '.mp4', '.avi', '.ts', '.m2ts', '.iso', '.vob'].includes(ext)) {
+      if (videoExts.includes(ext)) {
         fileName += originalName.substring(lastDot);
       }
     }

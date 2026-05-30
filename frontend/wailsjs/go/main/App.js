@@ -6,6 +6,10 @@ export function BackupData() {
   return window['go']['main']['App']['BackupData']();
 }
 
+export function CheckFolderSubtitles(arg1) {
+  return window['go']['main']['App']['CheckFolderSubtitles'](arg1);
+}
+
 export function CheckRequirements() {
   return window['go']['main']['App']['CheckRequirements']();
 }
@@ -86,8 +90,16 @@ export function SelectFolder() {
   return window['go']['main']['App']['SelectFolder']();
 }
 
+export function StartPrimateUpload(arg1) {
+  return window['go']['main']['App']['StartPrimateUpload'](arg1);
+}
+
 export function StartUpload(arg1) {
   return window['go']['main']['App']['StartUpload'](arg1);
+}
+
+export function StopPrimateUpload() {
+  return window['go']['main']['App']['StopPrimateUpload']();
 }
 
 export function StopUpload() {
@@ -96,6 +108,10 @@ export function StopUpload() {
 
 export function UpdateEngine() {
   return window['go']['main']['App']['UpdateEngine']();
+}
+
+export function UpdatePrimate() {
+  return window['go']['main']['App']['UpdatePrimate']();
 }
 
 export function ValidateMedia(arg1) {

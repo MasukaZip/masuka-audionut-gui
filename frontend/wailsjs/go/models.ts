@@ -7,6 +7,7 @@ export namespace main {
 	    qbitUser: string;
 	    qbitPass: string;
 	    autoMove: boolean;
+	    primatePath: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new AppSettings(source);
@@ -20,6 +21,7 @@ export namespace main {
 	        this.qbitUser = source["qbitUser"];
 	        this.qbitPass = source["qbitPass"];
 	        this.autoMove = source["autoMove"];
+	        this.primatePath = source["primatePath"];
 	    }
 	}
 	export class TrackerStat {
@@ -98,6 +100,36 @@ export namespace main {
 	        this.python = source["python"];
 	        this.ffmpeg = source["ffmpeg"];
 	        this.git = source["git"];
+	    }
+	}
+	export class PrimateRequest {
+	    path: string;
+	    titulo: string;
+	    descricao: string;
+	    modo: string;
+	    typeId: string;
+	    multi: boolean;
+	    detalhes: boolean;
+	    defaultSig: boolean;
+	    posterPath: string;
+	    bannerPath: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new PrimateRequest(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.path = source["path"];
+	        this.titulo = source["titulo"];
+	        this.descricao = source["descricao"];
+	        this.modo = source["modo"];
+	        this.typeId = source["typeId"];
+	        this.multi = source["multi"];
+	        this.detalhes = source["detalhes"];
+	        this.defaultSig = source["defaultSig"];
+	        this.posterPath = source["posterPath"];
+	        this.bannerPath = source["bannerPath"];
 	    }
 	}
 	export class ScreenshotResult {

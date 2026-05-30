@@ -1,0 +1,9 @@
+{
+  "uaPath": "/opt/upload-assistant",
+  "destPath": "/data",
+  "qbitHost": "",
+  "qbitUser": "",
+  "qbitPass": "",
+  "autoMove": false,
+  "primatePath": "/opt/pr1mate-pdf"
+}

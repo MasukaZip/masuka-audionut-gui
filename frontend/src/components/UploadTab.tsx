@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { SelectFile, SelectFolder, StartUpload, StopUpload, FetchTMDBIDs, ValidateMedia, ParseMediaInfo, GetSettings, GenerateScreenshots, DeletePreviewScreenshots } from '../../wailsjs/go/main/App';
+import { SelectFile, SelectFolder, StartUpload, StopUpload, FetchTMDBIDs, ValidateMedia, ParseMediaInfo, GetSettings, SaveSettings, GenerateScreenshots, DeletePreviewScreenshots, CheckFolderSubtitles } from '../../wailsjs/go/main/App';
 import { UploadRequest, ScreenshotResult } from '../types';
 import Console from './Console';
 import { EventsOn } from '../../wailsjs/runtime/runtime';
@@ -62,11 +62,32 @@ export default function UploadTab() {
   }, []);
 
   const handleChange = (field: keyof UploadRequest, val: any) => {
-    setReq((prev) => ({ ...prev, [field]: val }));
+    setReq((prev) => {
+      const updated = { ...prev, [field]: val };
+      if (field === 'autoMove' || field === 'destPath') {
+        GetSettings().then(s => SaveSettings({ ...s, autoMove: updated.autoMove, destPath: updated.destPath }));
+      }
+      return updated;
+    });
   };
 
   const handlePathSet = async (p: string) => {
     if (!p) return;
+
+    // Verifica legendas na pasta quando um arquivo é selecionado
+    const ext = p.split('.').pop()?.toLowerCase();
+    if (['mkv', 'mp4', 'avi', 'ts'].includes(ext || '')) {
+      const sub = await CheckFolderSubtitles(p);
+      if (sub.hasSubtitles) {
+        if (sub.mkvCount > 1) {
+          setWarnings([`Legendas detectadas na pasta, mas há ${sub.mkvCount} arquivos de vídeo. Para incluir a legenda, selecione a pasta manualmente — o UA vai processar todos os vídeos dentro dela.`]);
+        } else {
+          p = sub.folderPath as string;
+          setWarnings(['Legenda detectada — usando a pasta para incluí-la no torrent.']);
+        }
+      }
+    }
+
     setReq((prev) => ({ ...prev, path: p }));
     setPoster('');
     setWarnings([]);
